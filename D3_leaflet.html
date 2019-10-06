@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!--leaflet js package-->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js"></script>
+
+ <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+<!--below two for bootstrap-table css and js-->
+  <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table.min.css">
+  <script src="https://unpkg.com/bootstrap-table@1.15.4/dist/bootstrap-table.min.js"></script>
+<!--below is for cookie handle js-->
+<script src="https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.min.js"></script>
+
+<script src="https://d3js.org/d3.v5.min.js"></script>
+
+</style>
+
+<div class='container-fluid' style="padding-top:100px">
+  <div class='row'>
+    <div class='col-md-7'>
+      <div id='poeste_status_map' style="width: 800px; height: 780px;"></div>
+    </div>
+    <div calss=col-md-4>
+      
+      <div class='row'>
+          <table id='poeste3_weekly',data-show-columns="true"></table>
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+
+
+<script>
+  $(document).ready(function() {
+    $('#oeste3_main_menu').addClass('active').siblings().removeClass('active');});
+  
+  var mapdata={{poeste3_geo_data|safe}};
+
+  var mapdata1=mapdata.forEach(function(d,index,arr) {
+    arr[index]={'lat':d.lat,
+            'lon':d.lon,
+            's48t':new Date(d.s48t),
+            's53t':new Date(d.s53t),
+            's56at':new Date(d.s56at),
+            's56t':new Date(d.s56t),
+            'so_nr':d.so_nr
+    } 
+    return arr 
+  })
+  var min_lon=d3.min(mapdata, function(d) { return d.lon})
+  var max_lon=d3.max(mapdata, function(d) { return d.lon})
+  var min_lat=d3.min(mapdata, function(d) { return d.lat})
+  var max_lat=d3.max(mapdata, function(d) { return d.lat})
+  var center_lon=(min_lon+max_lon)/2
+  var center_lat=(min_lat+max_lat)/2
+
+  
+
+  var Lmap = L.map('poeste_status_map').setView([center_lat, center_lon], 8);
+      mapLink = 
+          '<a href="http://openstreetmap.org">OpenStreetMap</a>';
+      L.tileLayer(
+          'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; ' + mapLink + ' Contributors',
+          maxZoom: 15,
+          }).addTo(Lmap);
+
+  function applyLatLngToLayer(x,y) {
+    //var y = d.geometry.coordinates[1]
+    //var x = d.geometry.coordinates[0]
+    return Lmap.latLngToLayerPoint(new L.LatLng(y, x))
+}
+  // Add a svg layer to the map
+  var svg=L.svg().addTo(Lmap);
+  //var svg = d3.select(Lmap.getPanes().overlayPane).append('svg')
+
+
+var initial_date=new Date('2018-1-1');
+var end_date=new Date();
+
+var duration=Math.round((end_date-initial_date)/(24*3600*1000))
+
+var show_duration=100
+
+var steps=Math.ceil(duration/show_duration)
+
+
+var diff = 0;
+// This block will be executed 100 times.
+var interval=setInterval(function(){
+    var initial_date_in=initial_date
+    if (diff>show_duration) {clearInterval(interval)}
+    else {
+          diff=diff+1};
+    date_of_show=initial_date_in.setDate(initial_date_in.getDate()+steps);
+    if (date_of_show>end_date) {date_of_show=end_date}
+    //console.log(date_of_show,diff*steps)
+    d3.selectAll('circle')
+    .attr('fill',function(d){
+        var Status;
+        if(d.s56at< date_of_show) {Status='s56a'}
+          else if(d.s56t<date_of_show) {Status='s56'}
+            else if (d.s53t<date_of_show) {Status='s53'}
+              else if (d.s48t<date_of_show) {Status='s48'}
+                else {Status='not start'}
+        return z(Status) })
+
+  
+  
+     // bring higher stauts to top 
+      var i;
+      for (i=1; i<status_colors.length; i++) {
+        d3.selectAll('circle')
+        .filter(function() {
+          return d3.select(this).attr('fill')==status_colors[i]
+        })
+        .raise()};
+
+    d3.select('#current_show_date')
+      .data([date_of_show])
+      .text(function(d) {return parseDate(d)});
+    
+    }, 200);
+
+//date parse
+var parseDate = d3.timeFormat("%Y-%m-%d")
+
+var statuss=['not start','s48','s53','s56','s56a']
+var status_colors=["DarkGray","#F7AC7F","#FCE171","#D3FA86","#4FFE89"]
+// set the colors
+var z = d3.scaleOrdinal()
+        .domain(statuss)
+        .range(status_colors);
+
+
+
+var legends=statuss.map(function(e,i) {return [e,status_colors[i]]});
+
+//var svg = d3.select(Lmap.getPanes().overlayPane).append('svg');
+var g = d3.select('svg')
+          .attr('id','svg_container')
+          .append('g')
+          .attr("class", "leaflet-zoom-hide")
+          .selectAll("circle")
+          .data(mapdata)
+          .enter()
+          .append('circle')
+          .attr('cx',function(d) {return applyLatLngToLayer(d.lon,d.lat).x})
+          .attr('cy',function(d) {return applyLatLngToLayer(d.lon,d.lat).y})
+          .attr('r',8)
+          .attr('pointer-events','visible')
+          .attr('fill',function(d){
+            var Status;
+            if(d.s56at< initial_date) {Status='s56a'}
+              else if(d.s56t<initial_date) {Status='s56'}
+                else if (d.s53t<initial_date) {Status='s53'}
+                  else if (d.s48t<initial_date) {Status='s48'}
+                    else {Status='not start'}
+            return z(Status)
+            })
+            .on('mouseover',function(d,i){
+                    d3.select(this).transition()
+                    .duration('50')
+                    .attr('opacity','.50')
+                    .attr('r',15);
+            tooltipdiv.transition()
+            .duration(50)
+            .style("opacity", 1);
+            tooltipdiv.html('so_nr: ' + d.so_nr + "<br>" 
+                            + 's48: ' +parseDate(d.s48t)+ "<br>"
+                            + 's53: ' +parseDate(d.s53t)+ "<br>"
+                            + 's56: ' +parseDate(d.s56t)+ "<br>"
+                            + 's56a: ' +parseDate(d.s56at)+ "<br>")
+            .style("left", (d3.event.pageX + 10) + "px")
+            .style("top", (d3.event.pageY - 15) + "px");
+                  })
+            .on('mouseout', function (d, i) {
+                  d3.select(this).transition()
+                  .duration('50')
+                  .attr('r',8)
+                  .attr('opacity', '1');
+                  //Makes the new div disappear:
+                  tooltipdiv.transition()
+                    .duration('50')
+                    .style("opacity", 0);
+                })
+var initial_bounds= d3.select('svg').attr('viewBox')
+    
+var tooltipdiv = d3.select("body")
+      .append("div")
+      .attr('class','tooltip')
+      .style("opacity", 0);
+
+
+    
+    //dynamic show the date for current map status
+var show_date=d3.select('svg')
+              .append('g')
+              .attr('id','show_date')
+              .attr("class", "leaflet-zoom-hide")
+              .attr('width',40)
+              .attr('height',30)
+              .attr('fill','blue')
+              .attr('transform','translate(60,40)')
+              .selectAll('text')
+              .data([initial_date])
+              .enter()
+              .append('text')
+              .attr('id','current_show_date')
+              .attr("font-family", "sans-serif")
+              .attr("font-size", "30px")
+              .attr("fill", "darkblue")
+              .attr('opacity',0.9)
+              .text(function(d) {return parseDate(d)});
+  //legends container
+      var legend=d3.select('svg')
+              .append('g')
+              .attr("class", "leaflet-zoom-hide")
+              .attr('id','legend')
+              .attr('transform','translate(0,90)')
+
+      var legend_rect=legend.selectAll('rect')
+              .data(legends)
+              .enter()
+              .append('rect')
+              .attr('width',30)
+              .attr('height',20)
+              .attr('x',0)
+              .attr('y',function(d,i){return i*20})
+              .attr('fill',function(d){return d[1]})
+
+      var legend_text=legend.selectAll('text')
+              .data(legends)
+              .enter()
+              .append('text')
+              .attr("font-family", "sans-serif")
+              .attr("font-size", "20px")
+              .attr('x',30)
+              .attr('y',function(d,i){return i*20+20})
+              .attr('fill','#737373')
+              .text(function(d){return d[0]})
+
+      
+
+  
+  // Function that update circle position if something change
+function update() {
+  d3.selectAll("circle")
+    .attr("cx", function(d){ return applyLatLngToLayer(d.lon,d.lat).x })
+    .attr("cy", function(d){ return applyLatLngToLayer(d.lon,d.lat).y });
+  
+  
+  
+}
+
+// If the user change the map (zoom or drag), I update circle position:
+  Lmap.on("viewreset moveend", update)
+ 
+
+$(document).ready(
+$(function() {
+    $('#poeste3_weekly').bootstrapTable({
+      columns: {{ table_columns|safe }},
+      data: {{ table_data|safe }}
+    });
+  })
+);
+    
+
+</script>
+
