@@ -87,26 +87,7 @@ var g = d3.select('svg')
                   .attr('r',8)
                   .attr('opacity', '1'))
 
-    
-    //dynamic show the date for current map status
-var show_date=d3.select('svg')
-              .append('g')
-              .attr('id','show_date')
-              .attr("class", "leaflet-zoom-hide")
-              .attr('width',40)
-              .attr('height',30)
-              .attr('fill','blue')
-              .attr('transform','translate(60,40)')
-              .selectAll('text')
-              .data([initial_date])
-              .enter()
-              .append('text')
-              .attr('id','current_show_date')
-              .attr("font-family", "sans-serif")
-              .attr("font-size", "30px")
-              .attr("fill", "darkblue")
-              .attr('opacity',0.9)
-              .text(function(d) {return parseDate(d)});
+      var legend_data=["DarkGray","#F7AC7F","#FCE171","#D3FA86","#4FFE89"]
   //legends container
       var legend=d3.select('svg')
               .append('g')
@@ -115,7 +96,7 @@ var show_date=d3.select('svg')
               .attr('transform','translate(0,90)')
 
       var legend_rect=legend.selectAll('rect')
-              .data(legends)
+              .data(legend_data)
               .enter()
               .append('rect')
               .attr('width',30)
@@ -123,20 +104,7 @@ var show_date=d3.select('svg')
               .attr('x',0)
               .attr('y',function(d,i){return i*20})
               .attr('fill',function(d){return d[1]})
-
-      var legend_text=legend.selectAll('text')
-              .data(legends)
-              .enter()
-              .append('text')
-              .attr("font-family", "sans-serif")
-              .attr("font-size", "20px")
-              .attr('x',30)
-              .attr('y',function(d,i){return i*20+20})
-              .attr('fill','#737373')
-              .text(function(d){return d[0]})
-
       
-
   
   // Function that update circle position if something change
 function update() {
@@ -151,15 +119,6 @@ function update() {
 // If the user change the map (zoom or drag), I update circle position:
   Lmap.on("viewreset moveend", update)
  
-
-$(document).ready(
-$(function() {
-    $('#poeste3_weekly').bootstrapTable({
-      columns: {{ table_columns|safe }},
-      data: {{ table_data|safe }}
-    });
-  })
-);
     
 
 </script>
