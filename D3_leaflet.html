@@ -20,39 +20,22 @@
 </style>
 
 <div class='container-fluid' style="padding-top:100px">
-  <div class='row'>
-    <div class='col-md-7'>
       <div id='poeste_status_map' style="width: 800px; height: 780px;"></div>
     </div>
-    <div calss=col-md-4>
-      
-      <div class='row'>
-          <table id='poeste3_weekly',data-show-columns="true"></table>
-      </div>
-      
-    </div>
-  </div>
 </div>
 
 
 
 <script>
-  $(document).ready(function() {
-    $('#oeste3_main_menu').addClass('active').siblings().removeClass('active');});
-  
-  var mapdata={{poeste3_geo_data|safe}};
 
-  var mapdata1=mapdata.forEach(function(d,index,arr) {
-    arr[index]={'lat':d.lat,
-            'lon':d.lon,
-            's48t':new Date(d.s48t),
-            's53t':new Date(d.s53t),
-            's56at':new Date(d.s56at),
-            's56t':new Date(d.s56t),
-            'so_nr':d.so_nr
-    } 
-    return arr 
-  })
+  var mapdata=[{'so_nr': '36','lon': 9.26805861944445, 'lat': 51.3521721222222}, 
+                {'so_nr': '02', 'lon': 9.51492666666667, 'lat': 51.3112588416667}, 
+                {'so_nr': '05', 'lon': 9.49741252777778, 'lat': 51.3454635416667}, 
+                {'so_nr': '14', 'lon': 9.49126963888889, 'lat': 51.3118907722222}, 
+                {'so_nr': '17', 'lon': 9.47609216666667, 'lat': 51.3142994361111},
+                {'so_nr': '30', 'lon': 9.47966928611111, 'lat': 51.2997235722222}, 
+                {'so_nr': '31', 'lon': 9.44959031111111, 'lat': 51.28087725}, 
+
   var min_lon=d3.min(mapdata, function(d) { return d.lon})
   var max_lon=d3.max(mapdata, function(d) { return d.lon})
   var min_lat=d3.min(mapdata, function(d) { return d.lat})
@@ -81,67 +64,6 @@
   //var svg = d3.select(Lmap.getPanes().overlayPane).append('svg')
 
 
-var initial_date=new Date('2018-1-1');
-var end_date=new Date();
-
-var duration=Math.round((end_date-initial_date)/(24*3600*1000))
-
-var show_duration=100
-
-var steps=Math.ceil(duration/show_duration)
-
-
-var diff = 0;
-// This block will be executed 100 times.
-var interval=setInterval(function(){
-    var initial_date_in=initial_date
-    if (diff>show_duration) {clearInterval(interval)}
-    else {
-          diff=diff+1};
-    date_of_show=initial_date_in.setDate(initial_date_in.getDate()+steps);
-    if (date_of_show>end_date) {date_of_show=end_date}
-    //console.log(date_of_show,diff*steps)
-    d3.selectAll('circle')
-    .attr('fill',function(d){
-        var Status;
-        if(d.s56at< date_of_show) {Status='s56a'}
-          else if(d.s56t<date_of_show) {Status='s56'}
-            else if (d.s53t<date_of_show) {Status='s53'}
-              else if (d.s48t<date_of_show) {Status='s48'}
-                else {Status='not start'}
-        return z(Status) })
-
-  
-  
-     // bring higher stauts to top 
-      var i;
-      for (i=1; i<status_colors.length; i++) {
-        d3.selectAll('circle')
-        .filter(function() {
-          return d3.select(this).attr('fill')==status_colors[i]
-        })
-        .raise()};
-
-    d3.select('#current_show_date')
-      .data([date_of_show])
-      .text(function(d) {return parseDate(d)});
-    
-    }, 200);
-
-//date parse
-var parseDate = d3.timeFormat("%Y-%m-%d")
-
-var statuss=['not start','s48','s53','s56','s56a']
-var status_colors=["DarkGray","#F7AC7F","#FCE171","#D3FA86","#4FFE89"]
-// set the colors
-var z = d3.scaleOrdinal()
-        .domain(statuss)
-        .range(status_colors);
-
-
-
-var legends=statuss.map(function(e,i) {return [e,status_colors[i]]});
-
 //var svg = d3.select(Lmap.getPanes().overlayPane).append('svg');
 var g = d3.select('svg')
           .attr('id','svg_container')
@@ -155,48 +77,17 @@ var g = d3.select('svg')
           .attr('cy',function(d) {return applyLatLngToLayer(d.lon,d.lat).y})
           .attr('r',8)
           .attr('pointer-events','visible')
-          .attr('fill',function(d){
-            var Status;
-            if(d.s56at< initial_date) {Status='s56a'}
-              else if(d.s56t<initial_date) {Status='s56'}
-                else if (d.s53t<initial_date) {Status='s53'}
-                  else if (d.s48t<initial_date) {Status='s48'}
-                    else {Status='not start'}
-            return z(Status)
-            })
-            .on('mouseover',function(d,i){
+          .attr('fill','red')
+          .on('mouseover',function(d,i){
                     d3.select(this).transition()
                     .duration('50')
                     .attr('opacity','.50')
-                    .attr('r',15);
-            tooltipdiv.transition()
-            .duration(50)
-            .style("opacity", 1);
-            tooltipdiv.html('so_nr: ' + d.so_nr + "<br>" 
-                            + 's48: ' +parseDate(d.s48t)+ "<br>"
-                            + 's53: ' +parseDate(d.s53t)+ "<br>"
-                            + 's56: ' +parseDate(d.s56t)+ "<br>"
-                            + 's56a: ' +parseDate(d.s56at)+ "<br>")
-            .style("left", (d3.event.pageX + 10) + "px")
-            .style("top", (d3.event.pageY - 15) + "px");
-                  })
-            .on('mouseout', function (d, i) {
+                    .attr('r',15))
+           .on('mouseout', function (d, i) {
                   d3.select(this).transition()
                   .duration('50')
                   .attr('r',8)
-                  .attr('opacity', '1');
-                  //Makes the new div disappear:
-                  tooltipdiv.transition()
-                    .duration('50')
-                    .style("opacity", 0);
-                })
-var initial_bounds= d3.select('svg').attr('viewBox')
-    
-var tooltipdiv = d3.select("body")
-      .append("div")
-      .attr('class','tooltip')
-      .style("opacity", 0);
-
+                  .attr('opacity', '1'))
 
     
     //dynamic show the date for current map status
